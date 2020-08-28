@@ -1,0 +1,4 @@
+libvfs -- A virtual file system for GNU Hurd
+
+August 27, 2020
+0.1: the initial implementation
