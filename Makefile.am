@@ -1,8 +1,6 @@
 # automake definitions for libvfs
 # 
-#   Copyright (C) 1997, 2000, 2012, 20
-#
-#   Written by Junling Ma <junlingm@gmail.com>
+#   Copyright (C) 2020. Junling Ma <junlingm@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
