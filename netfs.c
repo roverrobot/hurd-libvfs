@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
+/* required netfs variable */
+int netfs_maxsymlinks = 12;
+
 /* helper functions */
 
 /* open a NODE in MODE, with credentials CRED. Note that we first open in read write,
