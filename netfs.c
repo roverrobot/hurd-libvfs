@@ -24,6 +24,23 @@
 
 /* helper functions */
 
+/* open a NODE in MODE, with credentials CRED. Note that we first open in read write,
+ * because we do not have a clue about what mode it has been opened. */
+static error_t node_open(struct iouser *cred, struct node *node, int mode)
+{
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  int flags = mode | O_READ | O_WRITE;
+  error_t err = netfs_check_open_permissions (cred, node, flags, 0);
+  if (err)
+    {
+      flags = mode;
+      err = netfs_check_open_permissions (cred, node, mode, 0);
+    }
+  if (!err)
+    err = hooks->open(hooks, node->nn_stat.st_ino, flags, 0, &node->nn->file);
+  return err;
+}
+
 /* Node NP is all done; free all its associated storage. */
 void
 netfs_node_norefs (struct node *node)
@@ -36,6 +53,9 @@ netfs_node_norefs (struct node *node)
 
   if (nn->dir)
     netfs_nrele(nn->dir);
+
+  if (nn->file)
+    nn->fs->hooks->close (nn->file);
 
   nn->fs->hooks->drop(nn->fs->hooks, node->nn_stat.st_ino);
   free (nn);
@@ -464,7 +484,17 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *node, char *bu
 error_t netfs_attempt_read (struct iouser *cred, struct node *node,
 			    off_t offset, size_t *len, void *data)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  error_t err = (hooks->read) ? ESUCCESS : ENOTSUP;
+
+  if (!err && node->nn->file == NULL)
+    err = node_open(cred, node, O_READ);
+    
+  if (!err)
+    return hooks->read(node->nn->file, offset, data, len);
+  
+  *len = 0;
+  return err;
 }
 
 /* Write to the file NODE for user CRED starting at OFSET and continuing for up

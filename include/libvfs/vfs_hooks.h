@@ -74,6 +74,14 @@ struct vfs_hooks
   /* required hook for reading symlinks, store the target in CONTENT, which is malloced 
    * and needs to be freed. */
   error_t (*readlink)(struct vfs_hooks *hooks, ino64_t ino, char **content);
+  /* open the file with in INO with FLAGS, and return it in FILE. If the file will be 
+   * created, create it with the MODE
+   */
+  error_t (*open)(struct vfs_hooks *remote, ino64_t ino, int flags, mode_t mode, vfs_file_t *file);
+  error_t (*close)(vfs_file_t file);
+  /* read the FILE from the OFFSET into BUFFER, which capacity is specified in *SIZE. THe
+   * number of bytes successfully read is returned in *SIZE */ 
+  error_t (*read)(vfs_file_t file, off_t offset, void *buffer, size_t *size);
 
   /* required dir hooks if the remote path of the root is a dir, otherwise optional.
    * needed for name lookups 
