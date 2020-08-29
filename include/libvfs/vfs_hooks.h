@@ -75,7 +75,10 @@ struct vfs_hooks
    * and needs to be freed. */
   error_t (*readlink)(struct vfs_hooks *hooks, ino64_t ino, char **content);
 
-  /* required dir hooks, needed for name lookups */
+  /* required dir hooks if the remote path of the root is a dir, otherwise optional.
+   * needed for name lookups 
+   */
+
   /* look up a NAME in a DIR, and return the inode in INO */
   error_t (*lookup)(struct vfs_hooks *hooks, ino64_t dir, const char *name, ino64_t *ino);
   error_t (*opendir)(struct vfs_hooks *hooks, ino64_t ino, vfs_dir_t *dir);

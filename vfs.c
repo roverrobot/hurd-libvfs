@@ -59,9 +59,7 @@ error_t vfs_create(
   struct vfs **fs)
 {
   /* check for required hooks */
-  if (hooks->lstat == NULL || hooks->statfs == NULL || 
-    hooks->opendir == NULL || hooks->closedir == NULL || hooks->readdir == NULL ||
-    hooks->readlink == NULL)
+  if (hooks->lstat == NULL || hooks->statfs == NULL || hooks->drop == NULL || hooks->readlink == NULL)
     return EINVAL;
 
   netfs_init ();
@@ -84,7 +82,16 @@ error_t vfs_create(
   (*fs)->hooks = hooks;
   (*fs)->local_user = local_user;
   err = vfs_create_node (*fs, NULL, 0, &(*fs)->root);
-
+  
+  if (!err)
+    netfs_validate_stat((*fs)->root, (*fs)->local_user);
+  
+  /* if the root is a dir then dir hooks must be implemented */
+  if (!err && ((*fs)->root->nn_stat.st_mode & S_IFMT) == S_IFDIR &&
+    (hooks->lookup == NULL || hooks->opendir == NULL || hooks->readdir == NULL 
+    || hooks->closedir == NULL))
+    err = EINVAL;
+  
   if (err)
     {
       iohelp_free_iouser(local_user);
@@ -101,7 +108,6 @@ error_t vfs_start(struct vfs *fs, int flags)
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
 
   netfs_root_node = fs->root;
-  netfs_validate_stat(fs->root, fs->local_user);
 
   underlying_node = netfs_startup (bootstrap, flags);
   if (fs->hooks->set_underlying_node)
