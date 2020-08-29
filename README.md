@@ -1,8 +1,11 @@
 # hurd-libvfs
 A virtual file system for GNU Hurd
 
-This library implements the libnetfs interface, based on a virtual filesystem interface defined below:
-(at this state, it only contains the needed hooks for ls)
+This library implements the libnetfs interface, based on a virtual filesystem interface 
+defined below: (at this state, it only contains the needed hooks for ls). The main goal 
+of this library is to allow vfs writers to concentrate on providing contents, while the
+library takes care of locking. In addition, the vfs interface is more akin to the glibc
+syscalls.
 
 ```C
 struct vfs_hooks
@@ -12,24 +15,27 @@ struct vfs_hooks
   /* required fsys hook */
   error_t (*statfs)(struct vfs_hooks *hooks, struct statfs *statbuf);
   /* an inode is not used by libvfs any more. It should be dropped */
-  void (*drop)(struct vfs_hooks *hooks, ino_t ino);
+  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* required file hooks */
   /* stat the inode INO and return in STATBUF, do not follow the symlink if INO is one */
-  error_t (*lstat)(struct vfs_hooks *hooks, ino_t ino, struct stat *statbuf);
+  error_t (*lstat)(struct vfs_hooks *hooks, ino64_t ino, struct stat64 *statbuf);
   /* required hook for reading symlinks, store the target in CONTENT, which is malloced 
    * and needs to be freed. */
-  error_t (*readlink)(struct vfs_hooks *hooks, ino_t ino, char **content);
+  error_t (*readlink)(struct vfs_hooks *hooks, ino64_t ino, char **content);
 
-  /* required dir hooks, needed for name lookups */
+  /* required dir hooks if the remote path of the root is a dir, otherwise optional.
+   * needed for name lookups 
+   */
+
   /* look up a NAME in a DIR, and return the inode in INO */
-  error_t (*lookup)(struct vfs_hooks *hooks, ino_t dir, const char *name, ino_t *ino);
-  error_t (*opendir)(struct vfs_hooks *hooks, ino_t ino, vfs_dir_t *dir);
+  error_t (*lookup)(struct vfs_hooks *hooks, ino64_t dir, const char *name, ino64_t *ino);
+  error_t (*opendir)(struct vfs_hooks *hooks, ino64_t ino, vfs_dir_t *dir);
   /* read an DIR entry into DIRENT, which has a maximum size DIRENT_SIZE. If the maximum
    * size is not large enough to hold the entry, return EKERN_NO_SPACE. DIRENT may be 
    * NULL, in which case the entry will be skipped. ENOENT will be returned if no further 
    * entries exist */ 
-  error_t (*readdir)(vfs_dir_t dir, struct dirent *dirent, size_t dirent_size);
+  error_t (*readdir)(vfs_dir_t dir, struct dirent64 *dirent, size_t dirent_size);
   error_t (*closedir)(vfs_dir_t dir);
 
   /* optional hooks. may be NULL */
