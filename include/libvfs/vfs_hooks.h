@@ -19,7 +19,7 @@
 #ifndef __VFS_HOOKS_H__
 #define __VFS_HOOKS_H__
 
-#define __USE_LARGEFILE64
+#define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 #include <dirent.h>
 #define __USE_GNU
@@ -27,8 +27,6 @@
 #include <mach.h>
 #include <stddef.h>
 #include <string.h>
-#define __USE_LARGEFILE64
-#define _FILE_OFFSET_BITS 64
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
@@ -40,11 +38,11 @@ struct iouser;
 #define DIRENT_ALIGN 4
 #define ALIGNED_LEN(len, align) (((len) + ((align)- 1)) & ~((align) - 1))
 
-#define DIRENT_NAME_OFFS offsetof (struct dirent, d_name)
+#define DIRENT_NAME_OFFS offsetof (struct dirent64, d_name)
 /* Length is structure before the name + the name + '\0', all
    padded to a four-byte alignment.  */
 #define DIRENT_LEN(name_len) ALIGNED_LEN(DIRENT_NAME_OFFS + (name_len) + 1, DIRENT_ALIGN)
-static inline size_t dirent_len(struct dirent *dir)
+static inline size_t dirent_len(struct dirent64 *dir)
 {
   return dir ? DIRENT_LEN(dir->d_namlen) : 0;
 }
@@ -68,24 +66,24 @@ struct vfs_hooks
   /* required fsys hook */
   error_t (*statfs)(struct vfs_hooks *hooks, struct statfs *statbuf);
   /* an inode is not used by libvfs any more. It should be dropped */
-  void (*drop)(struct vfs_hooks *hooks, ino_t ino);
+  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* required file hooks */
   /* stat the inode INO and return in STATBUF, do not follow the symlink if INO is one */
-  error_t (*lstat)(struct vfs_hooks *hooks, ino_t ino, struct stat *statbuf);
+  error_t (*lstat)(struct vfs_hooks *hooks, ino64_t ino, struct stat64 *statbuf);
   /* required hook for reading symlinks, store the target in CONTENT, which is malloced 
    * and needs to be freed. */
-  error_t (*readlink)(struct vfs_hooks *hooks, ino_t ino, char **content);
+  error_t (*readlink)(struct vfs_hooks *hooks, ino64_t ino, char **content);
 
   /* required dir hooks, needed for name lookups */
   /* look up a NAME in a DIR, and return the inode in INO */
-  error_t (*lookup)(struct vfs_hooks *hooks, ino_t dir, const char *name, ino_t *ino);
-  error_t (*opendir)(struct vfs_hooks *hooks, ino_t ino, vfs_dir_t *dir);
+  error_t (*lookup)(struct vfs_hooks *hooks, ino64_t dir, const char *name, ino64_t *ino);
+  error_t (*opendir)(struct vfs_hooks *hooks, ino64_t ino, vfs_dir_t *dir);
   /* read an DIR entry into DIRENT, which has a maximum size DIRENT_SIZE. If the maximum
    * size is not large enough to hold the entry, return EKERN_NO_SPACE. DIRENT may be 
    * NULL, in which case the entry will be skipped. ENOENT will be returned if no further 
    * entries exist */ 
-  error_t (*readdir)(vfs_dir_t dir, struct dirent *dirent, size_t dirent_size);
+  error_t (*readdir)(vfs_dir_t dir, struct dirent64 *dirent, size_t dirent_size);
   error_t (*closedir)(vfs_dir_t dir);
 
   /* optional hooks. may be NULL */

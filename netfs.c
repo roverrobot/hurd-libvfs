@@ -51,10 +51,16 @@ netfs_validate_stat (struct node *node, struct iouser *cred)
 {
   struct vfs *fs = node->nn->fs;
   struct vfs_hooks *hooks = fs->hooks;
-  error_t err = hooks->lstat(hooks, node->nn_stat.st_ino, &node->nn_stat);
-  /*map remote user to local user, otherwise the uid and gid is -1 */
-  if (!err && hooks->getuser)
-    err = hooks->getuser(hooks, fs->local_user, &node->nn_stat.st_uid, &node->nn_stat.st_gid);
+  struct stat64 statbuf;
+  error_t err = hooks->lstat(hooks, node->nn_stat.st_ino, &statbuf);
+  if (!err)
+    {
+      memcpy(&node->nn_stat, &statbuf, sizeof(statbuf));
+      node->nn_translated = node->nn_stat.st_mode;
+      /*map remote user to local user, otherwise the uid and gid is -1 */
+      if (hooks->getuser)
+        err = hooks->getuser(hooks, fs->local_user, &node->nn_stat.st_uid, &node->nn_stat.st_gid);
+    }
   return err;
 }
 
@@ -115,7 +121,7 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
   pthread_spin_unlock (&fs->nodes_lock);
 
   /* check if the file exists */
-  struct stat statbuf;
+  struct stat64 statbuf;
   err = hooks->lstat(hooks, ino, &statbuf);
   if (err)
     {
@@ -130,7 +136,7 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
   pthread_mutex_lock (&(*node)->lock);
   netfs_nref (*node);
-  (*node)->nn_stat = statbuf;
+  memcpy(&(*node)->nn_stat, &statbuf, sizeof(statbuf));
   (*node)->nn_translated = statbuf.st_mode;
 
   /* check for passive translator */
@@ -227,7 +233,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
       /* expand the data buffer until an entry is read in */
       for(;;)
         {
-          err = hooks->readdir(rdir, (struct dirent*)p, size - *data_len);
+          err = hooks->readdir(rdir, (struct dirent64*)p, size - *data_len);
           if (err != EKERN_NO_SPACE)
             break;
 
@@ -240,7 +246,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
       if (err)
         break;
 
-      ent_len = dirent_len((struct dirent*)p);
+      ent_len = dirent_len((struct dirent64*)p);
       p += ent_len;
       *data_len += ent_len;
       ++*data_entries;
