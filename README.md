@@ -53,6 +53,14 @@ struct vfs_hooks
 
 # Usage
 
+## Installation
+This library must be installed to /usr, so that passive translators can find it. That is,
+```
+autoreconf --install
+configure --prefix=/usr
+make && sudo make install
+```
+
 ## Create a VFS
 Use the following function to create a VFS object, which will then be passed to the ```vfs_start``` function below.
 
