@@ -59,7 +59,7 @@ error_t vfs_create(
   struct vfs **fs)
 {
   /* check for required hooks */
-  if (hooks->lstat == NULL || hooks->statfs == NULL || hooks->drop == NULL || 
+  if (hooks->lstat == NULL || hooks->statfs == NULL ||
     hooks->open == NULL || hooks->close == NULL || hooks->read == NULL || hooks->readlink == NULL)
     return EINVAL;
 

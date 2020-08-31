@@ -60,7 +60,8 @@ netfs_node_norefs (struct node *node)
   if (nn->file)
     nn->fs->hooks->close (nn->file);
 
-  nn->fs->hooks->drop(nn->fs->hooks, node->nn_stat.st_ino);
+  if (nn->fs->hooks->drop)
+    nn->fs->hooks->drop(nn->fs->hooks, node->nn_stat.st_ino);
   free (nn);
   free (node);
 }

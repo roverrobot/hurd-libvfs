@@ -65,8 +65,6 @@ struct vfs_hooks
 
   /* required fsys hook */
   error_t (*statfs)(struct vfs_hooks *hooks, struct statfs *statbuf);
-  /* an inode is not used by libvfs any more. It should be dropped */
-  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* required file hooks */
   /* stat the inode INO and return in STATBUF, do not follow the symlink if INO is one */
@@ -98,6 +96,9 @@ struct vfs_hooks
   error_t (*closedir)(vfs_dir_t dir);
 
   /* optional hooks. may be NULL */
+
+  /* an inode is not used by libvfs any more. It should be dropped */
+  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* optional hook to notify the vfs backend about the underlying node. If defined,
    * This is called after netfs_startup is called, but before netfs_server_loop is called.
