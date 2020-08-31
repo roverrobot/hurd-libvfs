@@ -14,8 +14,6 @@ struct vfs_hooks
 
   /* required fsys hook */
   error_t (*statfs)(struct vfs_hooks *hooks, struct statfs *statbuf);
-  /* an inode is not used by libvfs any more. It should be dropped */
-  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* required file hooks */
   /* stat the inode INO and return in STATBUF, do not follow the symlink if INO is one */
@@ -23,6 +21,14 @@ struct vfs_hooks
   /* required hook for reading symlinks, store the target in CONTENT, which is malloced 
    * and needs to be freed. */
   error_t (*readlink)(struct vfs_hooks *hooks, ino64_t ino, char **content);
+  /* open the file with in INO with FLAGS, and return it in FILE. If the file will be 
+   * created, create it with the MODE
+   */
+  error_t (*open)(struct vfs_hooks *remote, ino64_t ino, int flags, mode_t mode, vfs_file_t *file);
+  error_t (*close)(vfs_file_t file);
+  /* read the FILE from the OFFSET into BUFFER, which capacity is specified in *SIZE. THe
+   * number of bytes successfully read is returned in *SIZE */ 
+  error_t (*read)(vfs_file_t file, off_t offset, void *buffer, size_t *size);
 
   /* required dir hooks if the remote path of the root is a dir, otherwise optional.
    * needed for name lookups 
@@ -39,6 +45,13 @@ struct vfs_hooks
   error_t (*closedir)(vfs_dir_t dir);
 
   /* optional hooks. may be NULL */
+
+  /* write BUFFER to the FILE starting at the OFFSET for a length of *SIZE bytes. The
+   * number of bytes successfully written is returned in *SIZE */ 
+  error_t (*write)(vfs_file_t file, off_t offset, const void *buffer, size_t *size);
+
+  /* an inode is not used by libvfs any more. It should be dropped */
+  void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* optional hook to notify the vfs backend about the underlying node. If defined,
    * This is called after netfs_startup is called, but before netfs_server_loop is called.
