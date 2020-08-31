@@ -153,12 +153,14 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
     }
 
   if (nn != NULL)
-    *node = nn->node;
+    {
+      *node = nn->node;
+      netfs_nref (*node);
+    }
   else
     err = vfs_create_node(fs, dir, ino, node);
 
   pthread_mutex_lock (&(*node)->lock);
-  netfs_nref (*node);
   memcpy(&(*node)->nn_stat, &statbuf, sizeof(statbuf));
   (*node)->nn_translated = statbuf.st_mode;
 
