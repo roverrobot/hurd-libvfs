@@ -97,6 +97,10 @@ struct vfs_hooks
 
   /* optional hooks. may be NULL */
 
+  /* write BUFFER to the FILE starting at the OFFSET for a length of *SIZE bytes. The
+   * number of bytes successfully written is returned in *SIZE */ 
+  error_t (*write)(vfs_file_t file, off_t offset, const void *buffer, size_t *size);
+
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 

@@ -503,11 +503,20 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *node,
   return err;
 }
 
-/* Write to the file NODE for user CRED starting at OFSET and continuing for up
-   to *LEN bytes from DATA.  Set *LEN to the amount seccessfully written upon
-   return. */
+/* write BUFFER to the FILE starting at the OFFSET for a length of *SIZE bytes. The
+ * number of bytes successfully written is returned in *SIZE */ 
 error_t netfs_attempt_write (struct iouser *cred, struct node *node,
 			     off_t offset, size_t *len, void *data)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  error_t err = (hooks->read) ? ESUCCESS : ENOTSUP;
+
+  if (!err && node->nn->file == NULL)
+    err = node_open(cred, node, O_WRITE);
+    
+  if (!err)
+    return hooks->write(node->nn->file, offset, data, len);
+  
+  *len = 0;
+  return err;
 }
