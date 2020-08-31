@@ -35,6 +35,8 @@ struct netnode
   hurd_ihash_locp_t node_locp;
   /* the remote file handle, NULL if not opened or is a dir */
   struct vfs_file *file;
+  /* a pager for the file */
+  struct pager *pager;
 };
 
 /* a particular virtual file system */
@@ -49,6 +51,10 @@ struct vfs {
   struct hurd_ihash nodes;
   /* a lock that protects the NODES hash table */
   pthread_spinlock_t nodes_lock;
+  /* for a pager */
+  pthread_spinlock_t pager_lock; /* global lock */
+  struct pager_requests *pager_requests;
+  struct port_bucket *pager_port_bucket;
 };
 
 /* Return a new node in NODE in vfs FS, with the parent DIR, the PATH relative to the root 

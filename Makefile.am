@@ -17,9 +17,9 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 lib_LTLIBRARIES = libvfs.la
-libvfs_la_SOURCES = vfs.c netfs.c
+libvfs_la_SOURCES = vfs.c netfs.c io_map.c
 pkginclude_HEADERS = include/libvfs/*.h
 
 AM_CPPFLAGS = -I./include
 AM_CFLAGS = -std=gnu99 -fgnu89-inline
-AM_LDFLAGS = -lnetfs
+AM_LDFLAGS = -lnetfs -lpager
