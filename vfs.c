@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "libvfs/vfs.h"
+#include <hurd/pager.h>
 #include <sys/mman.h>
 
 char *netfs_server_name;
@@ -82,7 +83,12 @@ error_t vfs_create(
 
   (*fs)->hooks = hooks;
   (*fs)->local_user = local_user;
-  err = vfs_create_node (*fs, NULL, 0, &(*fs)->root);
+  pthread_spin_init(&(*fs)->pager_lock, 0);
+  (*fs)->pager_port_bucket = ports_create_bucket();
+  (*fs)->pager_requests = NULL;
+  err = pager_start_workers ((*fs)->pager_port_bucket, &(*fs)->pager_requests);
+  if (!err)
+    err = vfs_create_node (*fs, NULL, 0, &(*fs)->root);
   
   if (!err)
     netfs_validate_stat((*fs)->root, (*fs)->local_user);
@@ -135,6 +141,7 @@ error_t vfs_create_node (struct vfs *fs, struct node *dir, ino_t ino, struct nod
 
   nn->fs = fs;
   nn->file = NULL;
+  nn->pager = NULL;
 
   *node = netfs_make_node (nn);
   if (*node == NULL)
