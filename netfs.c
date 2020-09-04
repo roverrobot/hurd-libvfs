@@ -326,7 +326,18 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
 error_t
 netfs_report_access (struct iouser *cred, struct node *node, int *types)
 {
-  return ENOTSUP;
+  error_t err = netfs_validate_stat (node, cred);
+  if (! err)
+    {
+      *types = 0;
+      if (fshelp_access (&node->nn_stat, S_IREAD, cred) == 0)
+        *types |= O_READ;
+      if (fshelp_access (&node->nn_stat, S_IWRITE, cred) == 0)
+        *types |= O_WRITE;
+      if (fshelp_access (&node->nn_stat, S_IEXEC, cred) == 0)
+        *types |= O_EXEC;
+    }
+  return err;
 }
 
 /* Trivial definitions.  */
