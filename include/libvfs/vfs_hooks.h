@@ -104,6 +104,12 @@ struct vfs_hooks
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
 
+  /* get the passive translator for the inode INO into ARGZ, and its size in ARGZLEN */
+  error_t (*gettranslator)(struct vfs_hooks *remote, ino64_t ino, char **argz, size_t *argzlen);
+  /* set the passive translator for the inode INO as ARGZ, with its length in ARGZLEN */
+  error_t (*settranslator)(struct vfs_hooks *remote, ino64_t ino, const char *argz, size_t argzlen);
+
+  /* 
   /* optional hook to notify the vfs backend about the underlying node. If defined,
    * This is called after netfs_startup is called, but before netfs_server_loop is called.
    */

@@ -428,7 +428,20 @@ error_t netfs_attempt_mkdev (struct iouser *cred, struct node *node,
 error_t netfs_set_translator (struct iouser *cred, struct node *node,
 			      char *argz, size_t argzlen)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+
+  error_t err = fshelp_isowner(&node->nn_stat, cred);
+  if (err)
+    return err;
+
+  if (hooks->settranslator)
+    return hooks->settranslator(hooks, node->nn_stat.st_ino, argz, argzlen);
+  
+  /* ok if removing translator */
+  if (argzlen == 0 || argz == NULL)
+    return ESUCCESS;
+
+  return EOPNOTSUPP;
 }
 
 /* The user may define this function (but should define it together
@@ -439,7 +452,13 @@ error_t netfs_set_translator (struct iouser *cred, struct node *node,
 error_t netfs_get_translator (struct node *node, char **argz,
 			      size_t *argz_len)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  if (hooks->gettranslator)
+    return hooks->gettranslator(hooks, node->nn_stat.st_ino, argz, argz_len);
+  
+  *argz = NULL;
+  *argz_len = 0;
+  return ESUCCESS;
 }
 
 /* This should attempt a chflags call for the user specified by CRED on node
