@@ -345,7 +345,12 @@ netfs_report_access (struct iouser *cred, struct node *node, int *types)
 error_t
 netfs_attempt_sync (struct iouser *cred, struct node *node, int wait)
 {
-  return ENOTSUP;
+  /* success if the file is not opened */
+  if (node->nn->file == NULL)
+    return ESUCCESS;
+  
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  return (hooks->fsync) ? hooks->fsync(node->nn->file) : EOPNOTSUPP;
 }
 
 /* Delete NAME in DIR for USER. */
@@ -471,7 +476,20 @@ error_t netfs_attempt_chflags (struct iouser *cred, struct node *node,
 error_t netfs_attempt_set_size (struct iouser *cred, struct node *node,
 				off_t size)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  /* if the file is open, close it first */
+  if (node->nn->file != NULL)
+    hooks->close(node->nn->file);
+
+  if (hooks->truncate)
+    return hooks->truncate(hooks, node->nn_stat.st_ino, size);
+
+  /* if truncate is not supported, we can only truncate to 0 length by opening with O_WRITE | O_TRUNC */
+  if (size > 0)
+    return EOPNOTSUPP;
+
+  error_t err = netfs_check_open_permissions (cred, node, O_WRITE, 0);
+  return  (err) ? err : node_open(cred, node, O_WRITE | O_TRUNC);
 }
 
 /* Create a link in DIR with name NAME to FILE for USER.  Note that neither

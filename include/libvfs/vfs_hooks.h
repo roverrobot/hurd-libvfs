@@ -100,6 +100,10 @@ struct vfs_hooks
   /* write BUFFER to the FILE starting at the OFFSET for a length of *SIZE bytes. The
    * number of bytes successfully written is returned in *SIZE */ 
   error_t (*write)(vfs_file_t file, off_t offset, const void *buffer, size_t *size);
+  /* write buffered data of FILE to physical media */
+  error_t (*fsync)(vfs_file_t file);
+  /* change the size of file INO to OFFSET, truncate if shortened, and fills with 0 if enlarged */
+  error_t (*truncate)(struct vfs_hooks *hooks, ino64_t ino, off_t offset);
 
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
@@ -109,7 +113,6 @@ struct vfs_hooks
   /* set the passive translator for the inode INO as ARGZ, with its length in ARGZLEN */
   error_t (*settranslator)(struct vfs_hooks *remote, ino64_t ino, const char *argz, size_t argzlen);
 
-  /* 
   /* optional hook to notify the vfs backend about the underlying node. If defined,
    * This is called after netfs_startup is called, but before netfs_server_loop is called.
    */
