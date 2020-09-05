@@ -81,9 +81,6 @@ netfs_validate_stat (struct node *node, struct iouser *cred)
     {
       memcpy(&node->nn_stat, &statbuf, sizeof(statbuf));
       node->nn_translated = node->nn_stat.st_mode;
-      /*map remote user to local user, otherwise the uid and gid is -1 */
-      if (hooks->getuser)
-        err = hooks->getuser(hooks, fs->local_user, &node->nn_stat.st_uid, &node->nn_stat.st_gid);
     }
   return err;
 }

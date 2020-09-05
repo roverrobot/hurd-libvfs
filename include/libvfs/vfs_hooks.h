@@ -114,10 +114,6 @@ struct vfs_hooks
    * This is called after netfs_startup is called, but before netfs_server_loop is called.
    */
   error_t (*set_underlying_node)(struct vfs_hooks *hooks, mach_port_t underlying_node);
-  /* optional hook to replace the UID and GID on a remote host by those of LOCALUSER.
-   * For example, a server may ssh or ftp to a remote host with a user name and group id 
-   * that differs from the local user that starts the server */
-  error_t (*getuser)(struct vfs_hooks *remote, struct iouser *localuser, uid_t *uid, gid_t *gid);
 };
 
 #endif

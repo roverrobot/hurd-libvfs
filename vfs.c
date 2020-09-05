@@ -25,31 +25,6 @@
 char *netfs_server_name;
 char *netfs_server_version;
 
-/* return the local user that started the translator */
-static error_t get_local_user(struct iouser **user)
-{
-  uid_t euidbuf[10], auidbuf[10], *euids = euidbuf, *auids = auidbuf;
-  gid_t egidbuf[10], agidbuf[10], *egids = egidbuf, *agids = agidbuf;
-  mach_msg_type_number_t euidsCnt = 10, auidsCnt = 10, egidsCnt = 10, agidsCnt = 10;
-  int r = auth_getids(netfs_auth_server_port, &euids, &euidsCnt, &auids, &auidsCnt,
-    &egids, &egidsCnt, &agids, &agidsCnt);
-  if (r)
-    return r;
-  r = iohelp_create_complex_iouser(user, euids, euidsCnt, egids, egidsCnt);
-  if (!r)
-    {
-      if (euids != euidbuf)
-        munmap (euids, euidsCnt * sizeof (uid_t));
-      if (egids != egidbuf)
-        munmap (egids, egidsCnt * sizeof (uid_t));
-      if (auids != auidbuf)
-        munmap (auids, auidsCnt * sizeof (uid_t));
-      if (agids != agidbuf)
-        munmap (agids, agidsCnt * sizeof (uid_t));
-    }
-  return r;
-}
-
 /* create a vfs and return in FS. The SERVER_NAME and SERVER_VERSION will be used to fill 
  * netfs_server_name and netfs_version. 
  */
@@ -68,12 +43,6 @@ error_t vfs_create(
   netfs_server_name = strdup(server_name);
   netfs_server_version = strdup(server_version);
 
-  struct iouser *local_user;
-  error_t err = get_local_user(&local_user);
-
-  if (err)
-    return err;
-
   *fs = malloc (sizeof(**fs));
   if (*fs == NULL)
     return ENOMEM;
@@ -82,11 +51,10 @@ error_t vfs_create(
   pthread_spin_init (&(*fs)->nodes_lock, PTHREAD_PROCESS_PRIVATE);
 
   (*fs)->hooks = hooks;
-  (*fs)->local_user = local_user;
   pthread_spin_init(&(*fs)->pager_lock, 0);
   (*fs)->pager_port_bucket = ports_create_bucket();
   (*fs)->pager_requests = NULL;
-  err = pager_start_workers ((*fs)->pager_port_bucket, &(*fs)->pager_requests);
+  error_t err = pager_start_workers ((*fs)->pager_port_bucket, &(*fs)->pager_requests);
   if (!err)
     err = vfs_create_node (*fs, NULL, 0, &(*fs)->root);
   
@@ -101,7 +69,6 @@ error_t vfs_create(
   
   if (err)
     {
-      iohelp_free_iouser(local_user);
       free (*fs);
       *fs = NULL;
     }
