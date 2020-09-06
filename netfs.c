@@ -384,7 +384,17 @@ error_t netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 error_t netfs_attempt_rmdir (struct iouser *user,
 			     struct node *dir, char *name)
 {
-  return ENOTSUP;
+  error_t err = netfs_check_open_permissions (user, dir, O_WRITE, 0);
+  if (err)
+    return err;
+
+  struct vfs_hooks *hooks = dir->nn->fs->hooks;
+  ino64_t ino;
+  err = hooks->lookup(hooks, dir->nn_stat.st_ino, name, &ino);
+  if (err)
+    return err;
+
+  return (hooks->rmdir) ? hooks->rmdir(hooks, ino) : ENOTSUP;
 }
 
 /* This should attempt a chmod call for the user specified by CRED on node
