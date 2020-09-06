@@ -115,6 +115,8 @@ struct vfs_hooks
 
   /* remove the DIR */
   error_t (*rmdir)(struct vfs_hooks *hooks, ino64_t dir);
+  /* unlink the file INO */
+  error_t (*unlink)(struct vfs_hooks *hooks, ino64_t ino);
 
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);

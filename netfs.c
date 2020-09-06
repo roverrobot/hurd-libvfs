@@ -346,7 +346,17 @@ netfs_attempt_sync (struct iouser *cred, struct node *node, int wait)
 error_t netfs_attempt_unlink (struct iouser *user, struct node *dir,
 			      char *name)
 {
-  return ENOTSUP;
+  error_t err = netfs_check_open_permissions (user, dir, O_WRITE, 0);
+  if (err)
+    return err;
+
+  struct vfs_hooks *hooks = dir->nn->fs->hooks;
+  ino64_t ino;
+  err = hooks->lookup(hooks, dir->nn_stat.st_ino, name, &ino);
+  if (err)
+    return err;
+
+  return (hooks->unlink) ? hooks->unlink(hooks, ino) : EOPNOTSUPP;
 }
 
 /* Note that in this one call, neither of the specific nodes are locked. */
