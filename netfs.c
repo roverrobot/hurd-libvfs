@@ -362,7 +362,22 @@ error_t netfs_attempt_rename (struct iouser *user, struct node *fromdir,
 error_t netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 			     char *name, mode_t mode)
 {
-  return ENOTSUP;
+  /* can we write to DIR? */
+  error_t err = netfs_check_open_permissions (user, dir, O_WRITE, 0);
+
+  struct vfs_hooks *hooks = dir->nn->fs->hooks;
+  /* check permission */
+  if (!err && hooks->mkinode == NULL) 
+    err = EOPNOTSUPP;
+  if (!err)
+    {
+      mode = (mode & ~S_IFMT) | S_IFDIR;
+      err = hooks->mkinode(hooks, dir->nn_stat.st_ino, name, mode, user->uids->ids[0], 
+        user->gids->ids[0], NULL, 0);
+    }
+
+  pthread_mutex_unlock (&dir->lock);
+  return err;
 }
 
 /* Attempt to remove directory named NAME in DIR for USER. */
