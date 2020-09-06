@@ -304,7 +304,35 @@ error_t
 netfs_attempt_utimes (struct iouser *cred, struct node *node,
 		      struct timespec *atime, struct timespec *mtime)
 {
-  return ENOTSUP;
+  struct vfs_hooks *hooks = node->nn->fs->hooks;
+  if (!hooks->utimes)
+    return EOPNOTSUPP;
+
+  error_t err = fshelp_isowner (&node->nn_stat, cred);
+  if (err)
+    return err;
+
+  struct timeval tp;
+  err = gettimeofday(&tp, NULL);
+  if (err)
+    return err;
+
+  struct timeval times[2];
+  memset(times, 0, sizeof(times));
+
+  if (atime)
+    {
+      node->nn_stat.st_atim = *atime;
+      TIMESPEC_TO_TIMEVAL(&times[0], atime);
+    }
+  if (mtime)
+    {
+      node->nn_stat.st_mtim = *mtime;
+      TIMESPEC_TO_TIMEVAL(&times[1], mtime);
+    }
+
+  TIMEVAL_TO_TIMESPEC(&tp, &node->nn_stat.st_ctim);
+  return hooks->utimes(hooks, node->nn_stat.st_ino, times);
 }
 
 /* Return the valid access types (bitwise OR of O_READ, O_WRITE, and O_EXEC)

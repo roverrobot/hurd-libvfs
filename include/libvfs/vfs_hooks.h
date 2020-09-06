@@ -112,6 +112,8 @@ struct vfs_hooks
    * file types, DATA and LEN will be ignored. */
   error_t (*mkinode)(struct vfs_hooks *hooks, ino64_t dir, const char *name, mode_t mode, 
     uid_t uid, gid_t gid, void *data, size_t len);
+  /* set the atime (in TIMES[0]) and mtime (in TIMES[1]) for the file INO */
+  error_t (*utimes)(struct vfs_hooks *hooks, ino64_t ino, const struct timeval *times);
 
   /* remove the dir with NAME in the parent DIR */
   error_t (*rmdir)(struct vfs_hooks *hooks, ino64_t dir, const char *name);
