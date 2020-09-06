@@ -113,10 +113,10 @@ struct vfs_hooks
   error_t (*mkinode)(struct vfs_hooks *hooks, ino64_t dir, const char *name, mode_t mode, 
     uid_t uid, gid_t gid, void *data, size_t len);
 
-  /* remove the DIR */
-  error_t (*rmdir)(struct vfs_hooks *hooks, ino64_t dir);
-  /* unlink the file INO */
-  error_t (*unlink)(struct vfs_hooks *hooks, ino64_t ino);
+  /* remove the dir with NAME in the parent DIR */
+  error_t (*rmdir)(struct vfs_hooks *hooks, ino64_t dir, const char *name);
+  /* unlink the file with NAME in the parent DIR */
+  error_t (*unlink)(struct vfs_hooks *hooks, ino64_t dir, const char *name);
 
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);

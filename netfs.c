@@ -351,12 +351,7 @@ error_t netfs_attempt_unlink (struct iouser *user, struct node *dir,
     return err;
 
   struct vfs_hooks *hooks = dir->nn->fs->hooks;
-  ino64_t ino;
-  err = hooks->lookup(hooks, dir->nn_stat.st_ino, name, &ino);
-  if (err)
-    return err;
-
-  return (hooks->unlink) ? hooks->unlink(hooks, ino) : EOPNOTSUPP;
+  return (hooks->unlink) ? hooks->unlink(hooks, dir->nn_stat.st_ino, name) : EOPNOTSUPP;
 }
 
 /* Note that in this one call, neither of the specific nodes are locked. */
@@ -399,12 +394,7 @@ error_t netfs_attempt_rmdir (struct iouser *user,
     return err;
 
   struct vfs_hooks *hooks = dir->nn->fs->hooks;
-  ino64_t ino;
-  err = hooks->lookup(hooks, dir->nn_stat.st_ino, name, &ino);
-  if (err)
-    return err;
-
-  return (hooks->rmdir) ? hooks->rmdir(hooks, ino) : ENOTSUP;
+  return (hooks->rmdir) ? hooks->rmdir(hooks, dir->nn_stat.st_ino, name) : EOPNOTSUPP;
 }
 
 /* This should attempt a chmod call for the user specified by CRED on node
