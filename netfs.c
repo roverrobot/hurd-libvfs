@@ -306,7 +306,28 @@ error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
 			   char *name, mode_t mode, struct node **node)
 {
-  return ENOTSUP;
+  *node = NULL;
+  /* can we write to DIR? */
+  error_t err = netfs_check_open_permissions (user, dir, O_WRITE, 0);
+
+  struct vfs_hooks *hooks = dir->nn->fs->hooks;
+  /* check permission */
+  if (!err && hooks->mkinode == NULL) 
+    err = EOPNOTSUPP;
+  if (!err)
+    {
+      mode = (mode & ~S_IFMT) | S_IFREG;
+      err = hooks->mkinode(hooks, dir->nn_stat.st_ino, name, mode, user->uids->ids[0], 
+        user->gids->ids[0], NULL, 0);
+    }
+
+  if (!err)
+    err = netfs_attempt_lookup(user, dir, name, node);  
+  if (!err)
+    netfs_validate_stat(*node, user);
+
+  pthread_mutex_unlock (&dir->lock);
+  return err;
 }
 
 /* This should attempt a utimes call for the user specified by CRED on node

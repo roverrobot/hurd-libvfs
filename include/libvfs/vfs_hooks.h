@@ -104,6 +104,14 @@ struct vfs_hooks
   error_t (*fsync)(vfs_file_t file);
   /* change the size of file INO to OFFSET, truncate if shortened, and fills with 0 if enlarged */
   error_t (*truncate)(struct vfs_hooks *hooks, ino64_t ino, off_t offset);
+  /* make an inode in DIR with a name NAME, a creation mode MODE, the ownership UID and GID. 
+   * Note that the type of the inode is also specified by MODE. For a regular file, DATA
+   * and LEN holds the content of the file. If DATA is NULL but LEN is nonzero, fill the file
+   * with LEN bytes of 0. For an empty file, either FILE is NULL, or LEN is 0. For a symlink, 
+   * DATA is a (const char*) holding the target, and LEN is the string length. For any other
+   * file types, DATA and LEN will be ignored. */
+  error_t (*mkinode)(struct vfs_hooks *hooks, ino64_t dir, const char *name, mode_t mode, 
+    uid_t uid, gid_t gid, void *data, size_t len);
 
   /* an inode is not used by libvfs any more. It should be dropped */
   void (*drop)(struct vfs_hooks *hooks, ino64_t ino);
