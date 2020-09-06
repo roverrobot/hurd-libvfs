@@ -85,7 +85,7 @@ struct vfs_hooks
    * needed for name lookups 
    */
 
-  /* look up a NAME in a DIR, and return the inode in INO */
+  /* look up a NAME in a DIR, and return the inode in INO. returns ENOENT if name is not found */
   error_t (*lookup)(struct vfs_hooks *hooks, ino64_t dir, const char *name, ino64_t *ino);
   error_t (*opendir)(struct vfs_hooks *hooks, ino64_t ino, vfs_dir_t *dir);
   /* read an DIR entry into DIRENT, which has a maximum size DIRENT_SIZE. If the maximum

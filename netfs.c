@@ -134,21 +134,15 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
   ino_t ino;
   err = hooks->lookup(hooks, dir->nn_stat.st_ino, name, &ino);
   if (err)
-    return err;
+    {
+      pthread_mutex_unlock (&dir->lock);
+      return err;
+    }
 
   /* check if the node is in the cache */
   pthread_spin_lock (&fs->nodes_lock);
   struct netnode *nn = hurd_ihash_find (&fs->nodes, ino);
   pthread_spin_unlock (&fs->nodes_lock);
-
-  /* check if the file exists */
-  struct stat64 statbuf;
-  err = hooks->lstat(hooks, ino, &statbuf);
-  if (err)
-    {
-      pthread_mutex_unlock (&dir->lock);
-      return err;
-    }
 
   if (nn != NULL)
     {
@@ -159,29 +153,6 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
     err = vfs_create_node(fs, dir, ino, node);
 
   pthread_mutex_lock (&(*node)->lock);
-  memcpy(&(*node)->nn_stat, &statbuf, sizeof(statbuf));
-  (*node)->nn_translated = statbuf.st_mode;
-
-  /* check for passive translator */
-  if (!err)
-    {
-      char *argz;
-      size_t argz_len;
-      err = netfs_get_translator(*node, &argz, &argz_len);
-      if (err == ESUCCESS && argz_len > 0)
-        {
-          (*node)->nn_stat.st_mode |= S_IPTRANS;
-          (*node)->nn_translated = (*node)->nn_stat.st_mode & (S_IPTRANS | S_IFMT);
-        }
-      else if (err == ENOENT || err == ENOTSUP || argz_len == 0)
-        {
-          (*node)->nn_stat.st_mode &= ~S_IPTRANS;
-          (*node)->nn_translated = (*node)->nn_stat.st_mode & (S_IPTRANS | S_IFMT);
-          err = ESUCCESS;
-        }
-        err = ESUCCESS;
-    }
-
   pthread_mutex_unlock (&dir->lock);
   return err;
 }
@@ -323,9 +294,6 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
 
   if (!err)
     err = netfs_attempt_lookup(user, dir, name, node);  
-  if (!err)
-    netfs_validate_stat(*node, user);
-
   pthread_mutex_unlock (&dir->lock);
   return err;
 }
